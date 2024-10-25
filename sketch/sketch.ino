@@ -96,6 +96,8 @@ void readRFID(void ) { /* function readRFID */
   printDec(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
 
+  client.publish("CosaNostra/cardId",);
+
   // Halt PICC
   rfid.PICC_HaltA();
 
