@@ -92,11 +92,21 @@ void readRFID(void ) { /* function readRFID */
     nuidPICC[i] = rfid.uid.uidByte[i];
   }
 
-  Serial.print(F("RFID In dec: "));
-  printDec(rfid.uid.uidByte, rfid.uid.size);
-  Serial.println();
+  String cardId = "";
 
-  client.publish("CosaNostra/cardId",);
+  for (byte i = 0; i < rfid.uid.size; i++) {
+
+    cardId += String(rfid.uid.uidByte[i] < 0x10 ? "0" : "");
+    cardId += String(rfid.uid.uidByte[i], HEX);
+  }
+
+  Serial.println(cardId);
+
+  char message[100];
+
+  cardId.toCharArray(message, cardId.length() + 1);
+
+  client.publish("CosaNostra/cardId", message);
 
   // Halt PICC
   rfid.PICC_HaltA();
