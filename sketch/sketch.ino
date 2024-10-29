@@ -38,6 +38,8 @@ void reconnect(){
     
     if(client.connect("ESP32CosaNostra")){
 
+      client.subscribe("cosanostra/playsound");
+
       Serial.println("Connected");
     }
 
@@ -103,16 +105,29 @@ void readRFID(void ) { /* function readRFID */
   Serial.println(cardId);
 
   char message[100];
-
   cardId.toCharArray(message, cardId.length() + 1);
 
-  client.publish("CosaNostra/cardId", message);
+  client.publish("cosanostra/cardid", message);
 
   // Halt PICC
   rfid.PICC_HaltA();
 
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  
+  for (int i = 0; i < length; i++) {
+
+    Serial.print((char)payload[i]);
+  }
+
+  
 }
 
 void printHex(byte *buffer, byte bufferSize) {
@@ -149,8 +164,10 @@ void setup(){
 
   Serial.print(F("Reader :"));
   rfid.PCD_DumpVersionToSerial();
+
+  client.setCallback(callback);
 }
- 
+
 void loop(){
   
   if(!client.connected()){
