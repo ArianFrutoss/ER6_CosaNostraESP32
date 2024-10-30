@@ -15,6 +15,10 @@ Servo myServo;
 #define SS_PIN 5
 #define RST_PIN 0
 #define GPI0_PIN 18
+#define CLOSE_DOOR 0
+#define OPEN_DOOR 180
+
+int servoAngle = CLOSE_DOOR;
 
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PSW;
@@ -42,7 +46,7 @@ void reconnect(){
     
     if(client.connect("ESP32CosaNostra")){
 
-      client.subscribe("cosanostra/opendoor");
+      client.subscribe("cosanostra/esp32/#");
 
       Serial.println("Connected");
     }
@@ -111,7 +115,7 @@ void readRFID(void ) { /* function readRFID */
   char message[100];
   cardId.toCharArray(message, cardId.length() + 1);
 
-  client.publish("cosanostra/cardid", message);
+  client.publish("cosanostra/server/cardid", message);
 
   // Halt PICC
   rfid.PICC_HaltA();
@@ -130,28 +134,19 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     Serial.print((char)payload[i]);
   }
-
-  // switch (topic) {
-  //   case ["cosanostra/opendoor"]:
-  //       openDoor();
-  //       break;
-    
-  //   case ["cosanostra/closedoor"]:
-  //       closeDoor();
-  //       break;
-
-  //   default:
-  //       break;
-  // }
+  if(String(topic) == "cosanostra/esp32/opendoor") openDoor();
+  if(String(topic) == "cosanostra/esp32/closedoor") closeDoor();
   
 }
 
 void openDoor(){
   Serial.println("Opening Door");
+  graduallyApplyServoAngle(OPEN_DOOR);
 }
 
 void closeDoor(){
   Serial.println("Closing Door");
+  graduallyApplyServoAngle(CLOSE_DOOR);
 }
 
 void printHex(byte *buffer, byte bufferSize) {
@@ -177,13 +172,36 @@ void servoRotate()
   myServo.write(0);    // Mover el servo a 0 grados
   Serial.println("rotating servo to 0");
   delay(1000);         // Esperar 1 segundo
-  myServo.write(90);   // Mover el servo a 90 grados
-  Serial.println("rotating servo to 90");
-  delay(1000);         // Esperar 1 segundo
-  myServo.write(180);  // Mover el servo a 180 grados
-  Serial.println("rotating servo to 180");
-  delay(1000);         // Esperar 1 segundo
-  Serial.println("Finished rotating servo");
+  // myServo.write(90);   // Mover el servo a 90 grados
+  // Serial.println("rotating servo to 90");
+  // delay(1000);         // Esperar 1 segundo
+  // myServo.write(180);  // Mover el servo a 180 grados
+  // Serial.println("rotating servo to 180");
+  // delay(1000);         // Esperar 1 segundo
+  // Serial.println("Finished rotating servo");
+}
+
+void graduallyApplyServoAngle(int angle)
+{
+  int limitedAngle = limitServoAngle(angle);
+ 
+  while (servoAngle != limitedAngle) {
+    if (servoAngle > limitedAngle) {
+      servoAngle--;
+    }
+ 
+    if (servoAngle < limitedAngle) {
+      servoAngle++;
+    }
+ 
+    myServo.write(servoAngle);
+    delay(20);
+  }
+}
+
+int limitServoAngle(int angle)
+{
+  return constrain(angle, CLOSE_DOOR, OPEN_DOOR);
 }
 
 void setup(){
@@ -214,7 +232,7 @@ void loop(){
 
     reconnect();
   }
-  
+
   client.loop();
   readRFID();
 }
