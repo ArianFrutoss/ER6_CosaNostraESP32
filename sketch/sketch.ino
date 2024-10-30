@@ -5,12 +5,16 @@
 #include <PubSubClient.h>
 #include <SPI.h>//https://www.arduino.cc/en/reference/SPI
 #include <MFRC522.h>//https://github.com/miguelbalboa/rfid
+#include <ESP32Servo.h>
 
 #include "../arduino_secrets.h"
+
+Servo myServo;
 
 //Constants
 #define SS_PIN 5
 #define RST_PIN 0
+#define GPI0_PIN 18
 
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PSW;
@@ -38,7 +42,7 @@ void reconnect(){
     
     if(client.connect("ESP32CosaNostra")){
 
-      client.subscribe("cosanostra/playsound");
+      client.subscribe("cosanostra/opendoor");
 
       Serial.println("Connected");
     }
@@ -127,7 +131,27 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
 
+  // switch (topic) {
+  //   case ["cosanostra/opendoor"]:
+  //       openDoor();
+  //       break;
+    
+  //   case ["cosanostra/closedoor"]:
+  //       closeDoor();
+  //       break;
+
+  //   default:
+  //       break;
+  // }
   
+}
+
+void openDoor(){
+  Serial.println("Opening Door");
+}
+
+void closeDoor(){
+  Serial.println("Closing Door");
 }
 
 void printHex(byte *buffer, byte bufferSize) {
@@ -148,6 +172,20 @@ void printDec(byte *buffer, byte bufferSize) {
   }
 }
 
+void servoRotate() 
+{
+  myServo.write(0);    // Mover el servo a 0 grados
+  Serial.println("rotating servo to 0");
+  delay(1000);         // Esperar 1 segundo
+  myServo.write(90);   // Mover el servo a 90 grados
+  Serial.println("rotating servo to 90");
+  delay(1000);         // Esperar 1 segundo
+  myServo.write(180);  // Mover el servo a 180 grados
+  Serial.println("rotating servo to 180");
+  delay(1000);         // Esperar 1 segundo
+  Serial.println("Finished rotating servo");
+}
+
 void setup(){
 
   Serial.begin(115200);
@@ -165,6 +203,8 @@ void setup(){
   Serial.print(F("Reader :"));
   rfid.PCD_DumpVersionToSerial();
 
+  myServo.attach(GPI0_PIN);
+
   client.setCallback(callback);
 }
 
@@ -174,7 +214,7 @@ void loop(){
 
     reconnect();
   }
-
+  
   client.loop();
   readRFID();
 }
