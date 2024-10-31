@@ -14,7 +14,7 @@ Servo myServo;
 //Constants
 #define SS_PIN 5
 #define RST_PIN 0
-#define GPI0_PIN 18
+#define GPI0_PIN 16
 #define CLOSE_DOOR 0
 #define OPEN_DOOR 180
 
@@ -22,7 +22,7 @@ int servoAngle = CLOSE_DOOR;
 
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PSW;
-char* cardID = "";
+String cardID = "";
 const char* mqtt_server = SECRET_SERVER;
 const int mqtt_port = SECRET_PORT;
 
@@ -115,8 +115,10 @@ void readRFID(void ) { /* function readRFID */
   char message[100];
   cardId.toCharArray(message, cardId.length() + 1);
 
-  cardID = message;
-  client.publish("cosanostra/server/cardid", cardID);
+  cardID = cardId;
+  Serial.print("Saved into CardID: ");
+   Serial.println(message);
+  client.publish("cosanostra/server/cardid", message);
 
   // Halt PICC
   rfid.PICC_HaltA();
@@ -143,7 +145,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void openDoor(){
   Serial.println("Opening Door");
   graduallyApplyServoAngle(OPEN_DOOR);
-  client.publish("cosanostra/server/dooropened", cardID);
+  char message[100];
+  cardID.toCharArray(message, cardID.length() + 1);
+  client.publish("cosanostra/server/dooropened", message);
 }
 
 void closeDoor(){
