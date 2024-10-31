@@ -22,7 +22,7 @@ int servoAngle = CLOSE_DOOR;
 
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PSW;
-
+char* cardID = "";
 const char* mqtt_server = SECRET_SERVER;
 const int mqtt_port = SECRET_PORT;
 
@@ -115,7 +115,8 @@ void readRFID(void ) { /* function readRFID */
   char message[100];
   cardId.toCharArray(message, cardId.length() + 1);
 
-  client.publish("cosanostra/server/cardid", message);
+  cardID = message;
+  client.publish("cosanostra/server/cardid", cardID);
 
   // Halt PICC
   rfid.PICC_HaltA();
@@ -142,11 +143,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void openDoor(){
   Serial.println("Opening Door");
   graduallyApplyServoAngle(OPEN_DOOR);
+  client.publish("cosanostra/server/dooropened", cardID);
 }
 
 void closeDoor(){
   Serial.println("Closing Door");
   graduallyApplyServoAngle(CLOSE_DOOR);
+  cardID = "";
 }
 
 void printHex(byte *buffer, byte bufferSize) {
