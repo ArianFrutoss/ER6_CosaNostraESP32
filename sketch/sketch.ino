@@ -29,6 +29,10 @@ String cardID = "";
 const char* mqtt_server = SECRET_SERVER;
 const int mqtt_port = SECRET_PORT;
 
+const char* ca_crt = CA_CRT;
+const char* esp32_crt = ESP32_CRT;
+const char* esp32_key = ESP32_KEY;
+
 //Parameters
 const int ipaddress[4] = {103, 97, 67, 25};
 
@@ -37,7 +41,7 @@ byte nuidPICC[4] = {0, 0, 0, 0};
 MFRC522::MIFARE_Key key;
 MFRC522 rfid = MFRC522(SS_PIN, RST_PIN);
 
-WiFiClient espClient;
+WiFiClientSecure espClient;
 
 PubSubClient client(espClient);
 
@@ -63,6 +67,13 @@ void reconnect(){
       delay(5000);
     }
   }
+}
+
+void setup_ssl(){
+
+  espClient.setCACert(ca_crt);
+  espClient.setCertificate(esp32_crt);
+  espClient.setPrivateKey(esp32_key);
 }
 
 void setup_wifi(){
@@ -237,6 +248,7 @@ void setup(){
   Serial.begin(115200);
 
   setup_wifi();
+  setup_ssl();
 
   client.setServer(mqtt_server, mqtt_port);
 
