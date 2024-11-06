@@ -3,10 +3,9 @@
 #include <esp_wifi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
-#include <SPI.h>//https://www.arduino.cc/en/reference/SPI
 #include <MFRC522.h>//https://github.com/miguelbalboa/rfid
 #include <ESP32Servo.h>
-
+#include <Arduino.h>
 #include "../arduino_secrets.h"
 
 Servo myServo;
@@ -17,6 +16,10 @@ Servo myServo;
 #define GPI0_PIN 16
 #define CLOSE_DOOR 0
 #define OPEN_DOOR 180
+
+#define GREEN_LED_PIN 26
+#define RED_LED_PIN 25 
+#define BUZZER_PIN 12 
 
 int servoAngle = CLOSE_DOOR;
 
@@ -110,8 +113,6 @@ void readRFID(void ) { /* function readRFID */
     cardId += String(rfid.uid.uidByte[i], HEX);
   }
 
-  Serial.println(cardId);
-
   char message[100];
   cardId.toCharArray(message, cardId.length() + 1);
 
@@ -139,10 +140,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   if(String(topic) == "cosanostra/esp32/opendoor") openDoor();
   if(String(topic) == "cosanostra/esp32/closedoor") closeDoor();
+  if(String(topic) == "cosanostra/esp32/accessdenied") accessDenied();
   
 }
 
-void openDoor(){
+void openDoor() {
+  digitalWrite(GREEN_LED_PIN, HIGH);
+  tone(BUZZER_PIN,50);
+  delay(250);  
+  digitalWrite(GREEN_LED_PIN, LOW);
+  noTone(BUZZER_PIN);
   Serial.println("Opening Door");
   graduallyApplyServoAngle(OPEN_DOOR);
   char message[100];
@@ -150,10 +157,24 @@ void openDoor(){
   client.publish("cosanostra/server/dooropened", message);
 }
 
-void closeDoor(){
+void closeDoor() {
   Serial.println("Closing Door");
+  delay(1000);
   graduallyApplyServoAngle(CLOSE_DOOR);
   cardID = "";
+}
+
+void accessDenied() {
+  Serial.println("Access Denied");
+  digitalWrite(RED_LED_PIN, HIGH);
+  delay(500);
+  digitalWrite(RED_LED_PIN, LOW);
+  tone(BUZZER_PIN,2000);
+  delay(250);
+  noTone(BUZZER_PIN);
+  tone(BUZZER_PIN,1000);
+  delay(250);
+  noTone(BUZZER_PIN);
 }
 
 void printHex(byte *buffer, byte bufferSize) {
@@ -230,8 +251,13 @@ void setup(){
 
   myServo.attach(GPI0_PIN);
 
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
   client.setCallback(callback);
 }
+
 
 void loop(){
   
