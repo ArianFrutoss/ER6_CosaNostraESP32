@@ -33,6 +33,8 @@ const char* ca_crt = CA_CRT;
 const char* esp32_crt = ESP32_CRT;
 const char* esp32_key = ESP32_KEY;
 
+bool executing = false;
+
 //Parameters
 const int ipaddress[4] = {103, 97, 67, 25};
 
@@ -52,9 +54,9 @@ void reconnect(){
     Serial.print("Attempting MQTT connection...");
     
     if(client.connect("ESP32CosaNostra")){
-
+      
+      executing = false;
       client.subscribe("cosanostra/esp32/#");
-
       Serial.println("Connected");
     }
 
@@ -137,6 +139,8 @@ void readRFID(void ) { /* function readRFID */
 
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
+
+  executing = true;
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -173,6 +177,7 @@ void closeDoor() {
   delay(1000);
   graduallyApplyServoAngle(CLOSE_DOOR);
   cardID = "";
+  executing = false;
 }
 
 void accessDenied() {
@@ -204,20 +209,6 @@ void printDec(byte *buffer, byte bufferSize) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
     Serial.print(buffer[i], DEC);
   }
-}
-
-void servoRotate() 
-{
-  myServo.write(0);    // Mover el servo a 0 grados
-  Serial.println("rotating servo to 0");
-  delay(1000);         // Esperar 1 segundo
-  // myServo.write(90);   // Mover el servo a 90 grados
-  // Serial.println("rotating servo to 90");
-  // delay(1000);         // Esperar 1 segundo
-  // myServo.write(180);  // Mover el servo a 180 grados
-  // Serial.println("rotating servo to 180");
-  // delay(1000);         // Esperar 1 segundo
-  // Serial.println("Finished rotating servo");
 }
 
 void graduallyApplyServoAngle(int angle)
@@ -279,5 +270,9 @@ void loop(){
   }
 
   client.loop();
-  readRFID();
+
+  if (!executing){
+
+    readRFID();
+  }
 }
