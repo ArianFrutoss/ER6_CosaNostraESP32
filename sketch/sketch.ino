@@ -191,6 +191,7 @@ void accessDenied() {
   tone(BUZZER_PIN,1000);
   delay(250);
   noTone(BUZZER_PIN);
+  executing = false;
 }
 
 void printHex(byte *buffer, byte bufferSize) {
